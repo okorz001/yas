@@ -29,8 +29,7 @@ public final class Cons<T> extends AbstractSeq<T> {
     }
 
     @Override // Seq
-    @SuppressWarnings("unchecked") // cannot insert T into Seq
     public Seq<T> rest() {
-        return (Seq<T>) rest;
+        return Seqs.upcast(rest);
     }
 }

@@ -30,7 +30,7 @@ public interface Seq<T> {
      * If this method returns true, it is guaranteed that {@link Seq#first}
      * will throw. Conversely, if this method returns false, it is guaranteed
      * that {@link Seq#first} will return a value.
-     * @return True if this sequence has at least one value.
+     * @return {@code true} if this sequence has no values.
      */
     boolean empty();
 
@@ -38,6 +38,7 @@ public interface Seq<T> {
      * Returns the first value in the sequence.
      * @return The first value.
      * @throws java.util.NoSuchElementException If this sequence is empty.
+     * @see Seq#empty
      */
     T first();
 

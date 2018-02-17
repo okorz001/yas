@@ -12,22 +12,22 @@ public abstract class AbstractSeq<T> implements Seq<T> {
      * @return {@code false}
      */
     @Override // Seq
-    public boolean empty() {
+    public final boolean empty() {
         return false;
     }
 
     @Override // Object
-    public String toString() {
+    public final String toString() {
         return Seqs.toString(this);
     }
 
     @Override // Object
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         return o instanceof Seq && Seqs.equals(this, (Seq) o);
     }
 
     @Override // Object
-    public int hashCode() {
+    public final int hashCode() {
         return Seqs.hashCode(this);
     }
 }

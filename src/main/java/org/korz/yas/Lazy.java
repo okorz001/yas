@@ -40,9 +40,8 @@ public final class Lazy<T> extends AbstractSeq<T> {
     }
 
     @Override // Seq
-    @SuppressWarnings("unchecked") // cannot insert T into Seq
     public Seq<T> rest() {
-        return (Seq<T>) restFn.get();
+        return Seqs.upcast(restFn.get());
     }
 
     // avoid repeated invocations and release memory when possible

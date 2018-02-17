@@ -51,6 +51,13 @@ public class SeqsTest {
     }
 
     @Test
+    public void repeatTest() {
+        Seq<Integer> expected = cons(1, cons(1, cons(1, empty())));
+        Seq<Integer> result = take(3, repeat(1));
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void toStringTest() {
         Seq<String> seq = cons("a", cons("b", cons("c", empty())));
         assertThat(seq.toString(), is("(a, b, c)"));
@@ -105,31 +112,18 @@ public class SeqsTest {
     }
 
     @Test
+    public void distinctTest() {
+        Seq<Integer> seq = cons(1, cons(2, cons(1, empty())));
+        Seq<Integer> expected = cons(1, cons(2, empty()));
+        Seq<Integer> result = distinct(seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void foldLeftTest() {
         Seq<String> seq = cons("a", cons("b", cons("c", empty())));
         String result = foldLeft(String::concat, "_", seq);
         assertThat(result, is("_abc"));
-    }
-
-    @Test
-    public void foldRightTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        String result = foldRight(String::concat, seq, "_");
-        assertThat(result, is("abc_"));
-    }
-
-    @Test
-    public void findTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Optional<Integer> result = find(i -> i % 2 == 1, seq);
-        assertThat(result, is(Optional.of(1)));
-    }
-
-    @Test
-    public void findNoneTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Optional<Integer> result = find(i -> i > 4, seq);
-        assertThat(result, is(Optional.empty()));
     }
 
     @Test
@@ -156,6 +150,27 @@ public class SeqsTest {
     }
 
     @Test
+    public void foldRightTest() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        String result = foldRight(String::concat, seq, "_");
+        assertThat(result, is("abc_"));
+    }
+
+    @Test
+    public void findTest() {
+        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
+        Optional<Integer> result = find(i -> i % 2 == 1, seq);
+        assertThat(result, is(Optional.of(1)));
+    }
+
+    @Test
+    public void findNoneTest() {
+        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
+        Optional<Integer> result = find(i -> i > 4, seq);
+        assertThat(result, is(Optional.empty()));
+    }
+
+    @Test
     public void anyTest() {
         Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
         assertThat(any(i -> i > 1, seq), is(true));
@@ -177,5 +192,88 @@ public class SeqsTest {
     public void allTestFalse() {
         Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
         assertThat(all(i -> i > 1, seq), is(false));
+    }
+
+    @Test
+    public void minTest() {
+        Seq<Integer> seq = cons(2, cons(1, cons(3, empty())));
+        Integer result = min(Integer::compareTo, seq);
+        assertThat(result, is(1));
+    }
+
+    @Test
+    public void maxTest() {
+        Seq<Integer> seq = cons(1, cons(3, cons(2, empty())));
+        Integer result = max(Integer::compareTo, seq);
+        assertThat(result, is(3));
+    }
+
+    @Test
+    public void takeWhileTest() {
+        Seq<Integer> seq = cons(1, cons(2, cons(3, cons( 2, empty()))));
+        Seq<Integer> expected = cons(1, cons(2, empty()));
+        Seq<Integer> result = takeWhile(x -> x < 3, seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void takeTest() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Seq<String> expected = cons("a", cons("b", empty()));
+        Seq<String> result = take(2, seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void takeTestTooMany() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Seq<String> result = take(100, seq);
+        assertThat(result, is(seq));
+    }
+
+    @Test
+    public void dropWhileTest() {
+        Seq<Integer> seq = cons(1, cons(2, cons(3, cons( 2, empty()))));
+        Seq<Integer> expected = cons(3, cons(2, empty()));
+        Seq<Integer> result = dropWhile(x -> x < 3, seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void dropTest() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Seq<String> expected = cons("c", empty());
+        Seq<String> result = drop(2, seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void dropTestTooMany() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Seq<String> result = drop(100, seq);
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void nthTest() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Optional<String> result = nth(2, seq);
+        assertThat(result, is(Optional.of("c")));
+    }
+
+    @Test
+    public void nthTestTooMany() {
+        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
+        Optional<String> result = nth(100, seq);
+        assertThat(result, is(Optional.empty()));
+    }
+
+    @Test
+    public void concatTest() {
+        Seq<String> a = cons("a", cons("b", empty()));
+        Seq<String> b = cons("c", cons("d", empty()));
+        Seq<String> expected = cons("a", cons("b", cons("c", cons( "d", empty()))));
+        Seq<String> result = concat(a, b);
+        assertThat(result, is(expected));
     }
 }
