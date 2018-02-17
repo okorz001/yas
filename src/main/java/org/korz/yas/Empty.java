@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
  * contain any values.
  * @param <T> Unused.
  */
-public final class Empty<T> implements Seq<T> {
+public final class Empty<T> extends AbstractSeq<T> {
     private static final Empty INSTANCE = new Empty();
 
     /**
@@ -60,34 +60,5 @@ public final class Empty<T> implements Seq<T> {
     @Override // Seq
     public boolean empty() {
         return true;
-    }
-
-    /**
-     * Returns the string representation of the empty sequence
-     * @return {@code "()"}
-     */
-    @Override // Object
-    public String toString() {
-        return "()";
-    }
-
-    /**
-     * Checks if an object is this object.
-     * <p>
-     * There is only one empty sequence object, thus it is only equal to
-     * itself.
-     * @param o The object to compare for equality.
-     * @return {@code this == o}
-     */
-    @Override // Object
-    public boolean equals(Object o) {
-        // exactly one instance
-        return this == o;
-    }
-
-    @Override // Object
-    public int hashCode() {
-        // exactly one instance
-        return 5381;
     }
 }

@@ -3,45 +3,49 @@ package org.korz.yas;
 import java.util.function.Supplier;
 
 /**
- * A lazy sequence that generates the remaining sub-sequence on-demand.
+ * Creates a lazy sequence that is generated on-demand.
  * <p>
- * The remaining sub-sequence is guaranteed to be generated no more than once.
- * The generating function will not be called until the first invocation of
- * {@link Seq#rest}. The result of the function is cached and future
- * invocations of {@link Seq#rest} will return the cached result.
- * If {@link Seq#rest} is never called, then the function will never be called,
- * allowing the creation of <i>infinite sequences</i>.
+ * The sequence is guaranteed to be generated no more than once. The generating
+ * function will not be called until the first invocation of a {@link Seq}
+ * method. The result of the function is cached and future invocations of
+ * {@link Seq} methods will return the cached result. If no {@link Seq} methods
+ * are never called, then the function will never be called, allowing the
+ * creation of <i>infinite sequences</i>.
  * <p>
  * <b>Important</b>: The generating function must not depend on any external
- * state whatsoever. The return value must be deterministic since the
- * execution of the function is delayed indefinitely.
- * <p>
- * This class is thread-safe and is visibly immutable.
+ * state whatsoever. The return value must be deterministic since the execution
+ * of the function is delayed indefinitely.
  * @param <T> The type of values in the sequence.
  */
 public final class Lazy<T> extends AbstractSeq<T> {
-    private final T first;
-    private final Supplier<Seq<? extends T>> restFn;
+    private final Supplier<Seq<? extends T>> supplier;
 
     /**
      * Creates a new lazy sequence.
-     * @param first The first value.
-     * @param restFn The function to generate the remaining sub-sequence.
+     * @param supplier The function to generate the sequence.
      * @see Seqs#lazy
      */
-    public Lazy(T first, Supplier<Seq<? extends T>> restFn) {
-        this.first = first;
-        this.restFn = new MemoizedSupplier<>(restFn);
+    public Lazy(Supplier<Seq<? extends T>> supplier) {
+        this.supplier = new MemoizedSupplier<>(supplier);
+    }
+
+    private Seq<T> get() {
+        return Seqs.upcast(supplier.get());
+    }
+
+    @Override // Seq
+    public boolean empty() {
+        return get().empty();
     }
 
     @Override // Seq
     public T first() {
-        return first;
+        return get().first();
     }
 
     @Override // Seq
     public Seq<T> rest() {
-        return Seqs.upcast(restFn.get());
+        return get().rest();
     }
 
     // avoid repeated invocations and release memory when possible

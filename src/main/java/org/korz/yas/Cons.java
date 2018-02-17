@@ -8,7 +8,7 @@ package org.korz.yas;
  * implemented as simple getter methods.
  * @param <T> The type of values in the sequence.
  */
-public final class Cons<T> extends AbstractSeq<T> {
+public final class Cons<T> extends AbstractNonEmptySeq<T> {
     private final T first;
     private final Seq<? extends T> rest;
 

@@ -30,24 +30,31 @@ public class SeqsTest {
     public void lazyTest() {
         AtomicInteger called = new AtomicInteger();
         AtomicReference<Seq<Integer>> ref = new AtomicReference<>();
-        Seq<Integer> seq = lazy(1, () -> {
+        Seq<Integer> seq = lazy(() -> {
             called.incrementAndGet();
             return ref.get();
         });
-        assertThat(seq.empty(), is(false));
-        assertThat(seq.first(), is(1));
         assertThat(called.get(), is(0));
 
         // verify deferred execution
-        Seq<Integer> rest = cons(2, empty());
-        ref.set(rest);
-        assertThat(seq.rest(), is(rest));
+        ref.set(cons(1, empty()));
+        assertThat(seq.empty(), is(false));
+        assertThat(seq.first(), is(1));
+        assertThat(seq.rest(), is(empty()));
         assertThat(called.get(), is(1));
 
         // verify memoization
-        ref.set(null);
-        assertThat(seq.rest(), is(rest));
+        ref.set(empty());
+        assertThat(seq.empty(), is(false));
+        assertThat(seq.first(), is(1));
+        assertThat(seq.rest(), is(empty()));
         assertThat(called.get(), is(1));
+    }
+
+    @Test
+    public void lazyTestEmpty() {
+        Seq<Integer> seq = lazy(Seqs::empty);
+        assertThat(seq.empty(), is(true));
     }
 
     @Test

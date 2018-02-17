@@ -46,24 +46,22 @@ public abstract class Seqs {
     /**
      * Creates a lazy sequence that is generated on-demand.
      * <p>
-     * The remaining sub-sequence is guaranteed to be generated no more than
-     * once. The generating function will not be called until the first
-     * invocation of {@link Seq#rest}. The result of the function is cached
-     * and future invocations of {@link Seq#rest} will return the cached
-     * result. If {@link Seq#rest} is never called, then the function will
-     * never be called, allowing the creation of <i>infinite sequences</i>.
+     * The sequence is guaranteed to be generated no more than once. The
+     * generating function will not be called until the first invocation of
+     * a {@link Seq} method. The result of the function is cached
+     * and future invocations of {@link Seq} methods will return the cached
+     * result. If no {@link Seq} methods are never called, then the function
+     * will never be called, allowing the creation of <i>infinite sequences</i>.
      * <p>
      * <b>Important</b>: The generating function must not depend on any external
      * state whatsoever. The return value must be deterministic since the
      * execution of the function is delayed indefinitely.
-     * @param value The first value of the new sequence.
-     * @param seqFn A function to generate the remaining values of the new
-     *              sequence.
+     * @param supplier The function to generate the sequence.
      * @param <T> The type of values in the sequence.
      * @return A new sequence.
      */
-    public static <T> Seq<T> lazy(T value, Supplier<Seq<? extends T>> seqFn) {
-        return new Lazy<>(value, seqFn);
+    public static <T> Seq<T> lazy(Supplier<Seq<? extends T>> supplier) {
+        return new Lazy<>(supplier);
     }
 
     /**
@@ -217,9 +215,11 @@ public abstract class Seqs {
      */
     public static <TIn, TOut> Seq<TOut> map(Function<? super TIn, ? extends TOut> mapFn,
                                             Seq<TIn> seq) {
-        if (seq.empty())
-            return empty();
-        return lazy(mapFn.apply(seq.first()), () -> map(mapFn, seq.rest()));
+        return lazy(() -> {
+            if (seq.empty())
+                return empty();
+            return cons(mapFn.apply(seq.first()), map(mapFn, seq.rest()));
+        });
     }
 
     // filter-derived operations
@@ -239,12 +239,14 @@ public abstract class Seqs {
      */
     public static <T> Seq<T> filter(Predicate<? super T> predFn,
                                     Seq<? extends T> seq) {
-        if (seq.empty())
-            return empty();
-        T first = seq.first();
-        if (predFn.test(first))
-            return lazy(first, () -> filter(predFn, seq.rest()));
-        return filter(predFn, seq.rest());
+        return lazy(() -> {
+            if (seq.empty())
+                return empty();
+            T first = seq.first();
+            if (predFn.test(first))
+                return cons(first, filter(predFn, seq.rest()));
+            return filter(predFn, seq.rest());
+        });
     }
 
     /**
@@ -474,12 +476,14 @@ public abstract class Seqs {
      */
     public static <T> Seq<T> takeWhile(Predicate<? super T> predFn,
                                        Seq<? extends T> seq) {
-        if (seq.empty())
+        return lazy(() -> {
+            if (seq.empty())
+                return empty();
+            T first = seq.first();
+            if (predFn.test(first))
+                return cons(first, takeWhile(predFn, seq.rest()));
             return empty();
-        T first = seq.first();
-        if (predFn.test(first))
-            return lazy(first, () -> takeWhile(predFn, seq.rest()));
-        return empty();
+        });
     }
 
     /**
@@ -557,8 +561,10 @@ public abstract class Seqs {
      */
     public static <T> Seq<T> concat(Seq<? extends T> first,
                                     Seq<? extends T> second) {
-        if (first.empty())
-            return upcast(second);
-        return lazy(first.first(), () -> concat(first.rest(), second));
+        return lazy(() -> {
+            if (first.empty())
+                return upcast(second);
+            return cons(first.first(), concat(first.rest(), second));
+        });
     }
 }

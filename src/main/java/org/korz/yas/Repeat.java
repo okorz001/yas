@@ -4,7 +4,7 @@ package org.korz.yas;
  * An infinite sequence of a single value.
  * @param <T> The type of the value.
  */
-public final class Repeat<T> extends AbstractSeq<T> {
+public final class Repeat<T> extends AbstractNonEmptySeq<T> {
     private final T first;
 
     /**
