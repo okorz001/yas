@@ -283,4 +283,32 @@ public class SeqsTest {
         Seq<String> result = concat(a, b);
         assertThat(result, is(expected));
     }
+
+    @Test
+    public void iterateTest() {
+        Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
+        Seq<Integer> result = take(3, iterate(x -> x + 1, 0));
+        assertThat(expected, is(result));
+    }
+
+    @Test
+    public void range1Test() {
+        Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
+        Seq<Integer> result = range(3);
+        assertThat(expected, is(result));
+    }
+
+    @Test
+    public void range2Test() {
+        Seq<Integer> expected = cons(2, cons(3, cons(4, empty())));
+        Seq<Integer> result = range(2, 5);
+        assertThat(expected, is(result));
+    }
+
+    @Test
+    public void range3Test() {
+        Seq<Integer> expected = cons(1, cons(3, cons(5, empty())));
+        Seq<Integer> result = range(1, 6, 2);
+        assertThat(expected, is(result));
+    }
 }

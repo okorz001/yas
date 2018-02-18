@@ -567,4 +567,63 @@ public abstract class Seqs {
             return cons(first.first(), concat(first.rest(), second));
         });
     }
+
+    // iterate-derived operations
+
+    /**
+     * Creates an infinite sequence by iterating over a function.
+     * <p>
+     * In mathematics, iterating a function refers to applying the a function
+     * repeatedly using the previous output as the next input. The output
+     * sequence has the form: <code>(x, f(x), f(f(x)), ...)</code>
+     * @param fn The function to generate values.
+     * @param initial The first value of the sequence.
+     * @param <T> The type of values in the sequence.
+     * @return A new sequence.
+     */
+    public static <T> Seq<T> iterate(Function<? super T, ? extends T> fn,
+                                     T initial) {
+        return lazy(() -> cons(initial, iterate(fn, fn.apply(initial))));
+    }
+
+    /**
+     * Creates a sequence of integers increasing by one, starting at zero.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * <p>
+     * This function is equivalent to <code>range(0, end)</code>.
+     * @param end The ending bound, exclusive.
+     * @return A new sequence.
+     */
+    public static Seq<Integer> range(int end) {
+        return range(0, end, 1);
+    }
+
+    /**
+     * Creates a sequence of integers increasing by one, between two numbers.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * <p>
+     * This function is equivalent to <code>range(start, end, 1)</code>.
+     * @param start The first value of the sequence.
+     * @param end The ending bound, exclusive.
+     * @return A new sequence.
+     */
+    public static Seq<Integer> range(int start, int end) {
+        return range(start, end, 1);
+    }
+
+    /**
+     * Creates a sequence of integers increasing by a constant value, between
+     * two numbers.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param start The first value of the sequence.
+     * @param end The ending bound, exclusive.
+     * @param step The increment between values in the sequence.
+     * @return A new sequence.
+     */
+    public static Seq<Integer> range(int start, int end, int step) {
+        return takeWhile(x -> x < end, iterate(x -> x + step, start));
+    }
 }
