@@ -568,6 +568,50 @@ public abstract class Seqs {
         });
     }
 
+    /**
+     * Creates a sequence by recursively expanding any sequences inside of
+     * another sequence.
+     * <p>
+     * For example: <code>(1, (2, (3, 4)), 5)</code> creates
+     * <code>(1, 2, 3, 4, 5)</code>.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param seq The origin sequence.
+     * @return A new sequence which does not contain any {@link Seq} instances.
+     */
+    public static Seq<Object> flatten(Seq<?> seq) {
+        return lazy(() -> {
+            if (seq.empty())
+                return empty();
+            Object first = seq.first();
+            if (first instanceof Seq)
+                return concat(flatten((Seq<?>) first), flatten(seq.rest()));
+            return cons(first, flatten(seq.rest()));
+        });
+    }
+
+    /**
+     * A type-safe specialization of flatten for homogeneous sequences of
+     * sequences.
+     * <p>
+     * Unlike {@link Seqs#flatten}, this method does not recursively flatten
+     * sub-sequences. If T is bound to {@link Seq} (or a subtype), then the
+     * resulting sequence will still contain sequences.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param seq A homogeneous sequence of sequences.
+     * @param <T> The type of values in the new sequence.
+     * @return A new sequence.
+     * @see Seqs#flatten
+     */
+    public static <T> Seq<T> flattenSafe(Seq<? extends Seq<? extends T>> seq) {
+        return lazy(() -> {
+            if (seq.empty())
+                return empty();
+            return concat(seq.first(), flattenSafe(seq.rest()));
+        });
+    }
+
     // iterate-derived operations
 
     /**

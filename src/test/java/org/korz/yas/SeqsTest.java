@@ -285,6 +285,38 @@ public class SeqsTest {
     }
 
     @Test
+    public void flattenTest() {
+        Seq<?> a = cons("a", cons("b", empty()));
+        Seq<?> b = cons("c", cons("d", empty()));
+        // ((a, b), 0, (c, d))
+        Seq<?> seq = cons(a, cons(0, cons(b, empty())));
+        Seq<?> expected = cons("a", cons("b", cons(0, cons("c", cons( "d", empty())))));
+        Seq<?> result = flatten(seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void flattenTestMany() {
+        Seq<?> a = cons("a", cons("b", empty()));
+        // (((a, b)), 0)
+        Seq<?> seq = cons(cons(a, empty()), cons(0, empty()));
+        Seq<?> expected = cons("a", cons("b", cons(0, empty())));
+        Seq<Object> result = flatten(seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void flattenSafeTest() {
+        Seq<String> a = cons("a", cons("b", empty()));
+        Seq<String> b = cons("c", cons("d", empty()));
+        // ((a, b), (c, d))
+        Seq<Seq<String>> seq = cons(a, cons(b, empty()));
+        Seq<String> expected = cons("a", cons("b", cons("c", cons( "d", empty()))));
+        Seq<String> result = flattenSafe(seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void iterateTest() {
         Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
         Seq<Integer> result = take(3, iterate(x -> x + 1, 0));
