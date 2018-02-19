@@ -66,6 +66,9 @@ public abstract class Seqs {
 
     /**
      * Creates an infinite sequence of a single value.
+     * <p>
+     * To create an infinite sequence from a sequence of values, use
+     * {@link Seqs#cycle} instead.
      * @param val The value.
      * @param <T> The type of the value.
      * @return The sequence.
@@ -220,6 +223,19 @@ public abstract class Seqs {
                 return empty();
             return cons(mapFn.apply(seq.first()), map(mapFn, seq.rest()));
         });
+    }
+
+    /**
+     * Unzips a sequence of pairs into a pair of sequences.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param seq The origin sequence.
+     * @param <T1> The type of the first new sequence.
+     * @param <T2> The type of the second new sequence.
+     * @return A pair of new sequences.
+     */
+    public static <T1, T2> Pair<Seq<T1>, Seq<T2>> unzip(Seq<Pair<T1, T2>> seq) {
+        return new Pair<>(map(Pair::first, seq), map(Pair::second, seq));
     }
 
     // filter-derived operations
@@ -569,6 +585,19 @@ public abstract class Seqs {
     }
 
     /**
+     * Creates an infinite sequence by repeating another sequence.
+     * <p>
+     * If the origin sequence consists of a single value, consider using
+     * {@link Seqs#repeat} instead.
+     * @param seq The origin sequence.
+     * @param <T> The type of the value.
+     * @return A new sequence.
+     */
+    public static <T> Seq<T> cycle(Seq<? extends T> seq) {
+        return lazy(() -> concat(seq, cycle(seq)));
+    }
+
+    /**
      * Creates a sequence by recursively expanding any sequences inside of
      * another sequence.
      * <p>
@@ -612,6 +641,19 @@ public abstract class Seqs {
         });
     }
 
+    /**
+     * Transforms each value in a sequence into a sequence and flattens those
+     * sequences into a single sequence.
+     * @param mapFn The mapping function.
+     * @param seq The origin sequence.
+     * @param <T> The type of values in the new sequence.
+     * @return The new sequence.
+     */
+    public static <T> Seq<T> flatMap(Function<? super T, ? extends Seq<? extends T>> mapFn,
+                                     Seq<? extends T> seq) {
+        return flattenSafe(map(mapFn, seq));
+    }
+
     // iterate-derived operations
 
     /**
@@ -631,7 +673,21 @@ public abstract class Seqs {
     }
 
     /**
-     * Creates a sequence of integers increasing by one, starting at zero.
+     * Creates a sequence of non-negative integers increasing by one, starting
+     * at zero.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * <p>
+     * This function is equivalent to <code>range(Integer.MAX_VALUE)</code>.
+     * @return A new sequence.
+     */
+    public static Seq<Integer> range() {
+        return range(Integer.MAX_VALUE);
+    }
+
+    /**
+     * Creates a sequence of non-negative integers increasing by one, less than
+     * some value.
      * <p>
      * The returned sequence is <i>lazy</i>.
      * <p>
@@ -640,11 +696,11 @@ public abstract class Seqs {
      * @return A new sequence.
      */
     public static Seq<Integer> range(int end) {
-        return range(0, end, 1);
+        return range(0, end);
     }
 
     /**
-     * Creates a sequence of integers increasing by one, between two numbers.
+     * Creates a sequence of integers increasing by one, between two values.
      * <p>
      * The returned sequence is <i>lazy</i>.
      * <p>
@@ -659,7 +715,7 @@ public abstract class Seqs {
 
     /**
      * Creates a sequence of integers increasing by a constant value, between
-     * two numbers.
+     * two values.
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param start The first value of the sequence.
@@ -669,5 +725,75 @@ public abstract class Seqs {
      */
     public static Seq<Integer> range(int start, int end, int step) {
         return takeWhile(x -> x < end, iterate(x -> x + step, start));
+    }
+
+    // zip-derived operations
+
+    /**
+     * Zips two sequences into a sequence of pairs.
+     * <p>
+     * The new sequence will terminate after either origin sequence terminates.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param first The first origin sequence.
+     * @param second The second origin sequence.
+     * @param <T1> The type of the first value of pairs in the new sequence.
+     * @param <T2> The type of the second value of pairs in the new sequence.
+     * @return A new sequence of pairs.
+     */
+    public static <T1, T2> Seq<Pair<T1, T2>> zip(Seq<? extends T1> first,
+                                                 Seq<? extends T2> second) {
+        return lazy(() -> {
+            if (first.empty() || second.empty())
+                return empty();
+            return cons(new Pair<>(first.first(), second.first()),
+                        zip(first.rest(), second.rest()));
+        });
+    }
+
+    /**
+     * Zips values from a sequence with their zero-based index.
+     * <p>
+     * For example: <code>("a", "b", "c")</code> will generate
+     * <code>((0, "a"), (1, "b"), (2, "c"))</code>.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param seq The origin sequence.
+     * @param <T> The type of the second value of pairs in the new sequence.
+     * @return The new sequence.
+     */
+    public static <T> Seq<Pair<Integer, T>> enumerate(Seq<? extends T> seq) {
+        return zip(range(), seq);
+    }
+
+    // interleave-derived operations
+
+    /**
+     * Creates a new sequence by alternating values from two sequences.
+     * <p>
+     * Once either origin sequence is completed, the remaining values of the
+     * other sequence will be returned.
+     * <p>
+     * For example: <code>("a", "b") and (0, 1, 2)</code> will generate
+     * <code>("a", 0, "b", 1, 2)</code>.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param first The first origin sequence.
+     * @param second The second origin sequence.
+     * @param <T> The type of values in the new sequence.
+     * @return The new sequence.
+     */
+    public static <T> Seq<T> interleave(Seq<? extends T> first,
+                                        Seq<? extends T> second) {
+        return lazy(() -> {
+            if (first.empty()) {
+                if (second.empty())
+                    return empty();
+                return second;
+            }
+            if (second.empty())
+                return first;
+            return cons(first.first(), interleave(second, first.rest()));
+        });
     }
 }

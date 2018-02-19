@@ -3,6 +3,7 @@ package org.korz.yas;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -108,6 +109,16 @@ public class SeqsTest {
         Seq<String> expected = cons("A", cons("B", cons("C", empty())));
         Seq<String> result = map(String::toUpperCase, seq);
         assertThat(result, is(expected));
+    }
+
+    @Test
+    public void unzipTest() {
+        Seq<Pair<String, Integer>> seq = cons(new Pair<>("a", 1), cons(new Pair<>("b", 2), empty()));
+        Seq<String> first = cons("a", cons("b", empty()));
+        Seq<Integer> second = cons(1, cons(2, empty()));
+        Pair<Seq<String>, Seq<Integer>> result = unzip(seq);
+        assertThat(result.first(), is(first));
+        assertThat(result.second(), is(second));
     }
 
     @Test
@@ -285,6 +296,14 @@ public class SeqsTest {
     }
 
     @Test
+    public void cycleTest() {
+        Seq<String> seq = cons("a", cons("b", empty()));
+        Seq<String> expected = cons("a", cons("b", cons("a", cons( "b", cons("a", empty())))));
+        Seq<String> result = take(5, cycle(seq));
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void flattenTest() {
         Seq<?> a = cons("a", cons("b", empty()));
         Seq<?> b = cons("c", cons("d", empty()));
@@ -317,6 +336,15 @@ public class SeqsTest {
     }
 
     @Test
+    public void flatMapTest() {
+        Seq<Integer> seq = cons(0, cons(1, empty()));
+        Function<Integer, Seq<Integer>> f = x -> cons(x + 10, cons(x + 100, empty()));
+        Seq<Integer> expected = cons(10, cons(100, cons(11, cons(101, empty()))));
+        Seq<Integer> result = flatMap(f, seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void iterateTest() {
         Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
         Seq<Integer> result = take(3, iterate(x -> x + 1, 0));
@@ -342,5 +370,49 @@ public class SeqsTest {
         Seq<Integer> expected = cons(1, cons(3, cons(5, empty())));
         Seq<Integer> result = range(1, 6, 2);
         assertThat(expected, is(result));
+    }
+
+    @Test
+    public void zipTest() {
+        Seq<String> first = cons("a", cons("b", empty()));
+        Seq<Integer> second = cons(1, cons(2, empty()));
+        Seq<Pair<String, Integer>> expected = cons(new Pair<>("a", 1), cons(new Pair<>("b", 2), empty()));
+        Seq<Pair<String, Integer>> result = zip(first, second);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void zipTestShort() {
+        Seq<String> first = cons("a", cons("b", empty()));
+        Seq<Integer> second = cons(1, empty());
+        Seq<Pair<String, Integer>> expected = cons(new Pair<>("a", 1), empty());
+        Seq<Pair<String, Integer>> result = zip(first, second);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void enumerateTest() {
+        Seq<String> seq = cons("a", cons("b", empty()));
+        Seq<Pair<Integer, String>> expected = cons(new Pair<>(0, "a"), cons(new Pair<>(1, "b"), empty()));
+        Seq<Pair<Integer, String>> result = enumerate(seq);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void interleaveTest() {
+        Seq<String> first = cons("a", cons("b", empty()));
+        Seq<Integer> second = cons(0, cons(1, empty()));
+        Seq<Object> expected = cons("a", cons(0, cons("b", cons(1, empty()))));
+        Seq<Object> result = interleave(first, second);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void interleaveTestEmpty() {
+        Seq<String> seq = cons("a", cons("b", empty()));
+        Seq<Object> result = interleave(seq, empty());
+        assertThat(result, is(seq));
+        result = interleave(empty(), seq);
+        assertThat(result, is(seq));
     }
 }
