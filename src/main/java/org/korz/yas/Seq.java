@@ -1,5 +1,9 @@
 package org.korz.yas;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 /**
  * An immutable ordered sequence of values.
  * <p>
@@ -47,6 +51,50 @@ public interface Seq<T> {
      * @return The remaining values.
      */
     Seq<T> rest();
+
+    /**
+     * Applies a function to this sequence.
+     * <p>
+     * This is a convenience function to help make large compositions of
+     * functions more readable.
+     * <p>
+     * This method is equivalent to: <code>f.apply(this)</code>
+     * @param f The function to apply.
+     * @param <TOut> The result type of the function.
+     * @return The result of the function.
+     */
+    default <TOut> TOut apply(Function<Seq<T>, TOut> f) {
+        return f.apply(this);
+    }
+
+    /**
+     * Applies a terminal function (returning void) to this sequence.
+     * <p>
+     * This is a convenience function to help make large compositions of
+     * functions more readable.
+     * <p>
+     * This method is equivalent to: <code>f.accept(this)</code>
+     * @param f The function to apply.
+     * @see Seq#apply(Function)
+     */
+    default void apply(Consumer<Seq<T>> f) {
+        f.accept(this);
+    }
+
+    /**
+     * Applies a predicate to this sequence.
+     * <p>
+     * This is a convenience function to help make large compositions of
+     * functions more readable.
+     * <p>
+     * This method is equivalent to: <code>f.test(this)</code>
+     * @param f The predicate to apply.
+     * @return The result of the predicate.
+     * @see Seq#apply(Function)
+     */
+    default boolean apply(Predicate<Seq<T>> f) {
+        return f.test(this);
+    }
 
     /**
      * Returns the string representation of this sequence.
