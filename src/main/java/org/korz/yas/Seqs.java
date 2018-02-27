@@ -1,11 +1,17 @@
 package org.korz.yas;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -213,6 +219,128 @@ public abstract class Seqs {
     public static <T> Seq<T> seq(Stream<T> stream) {
         // BaseStream has iterator() but does not implement Iterable...
         return seq(stream.iterator());
+    }
+
+    /**
+     * Creates a sequence by reading lines from a text fragment.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param text The input text.
+     * @return The output sequence.
+     */
+    public static Seq<String> lines(String text) {
+        return lines(new Scanner(text));
+    }
+
+    /**
+     * Creates a sequence by reading lines from a file with the default
+     * character encoding.
+     * <p>
+     * If the file cannot be read, then the empty sequence will be returned.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param file The file to read.
+     * @return The output sequence.
+     * @see Charset#defaultCharset
+     */
+    public static Seq<String> lines(File file) {
+        return lines(file, Charset.defaultCharset());
+    }
+
+    /**
+     * Creates a sequence by reading lines from a file.
+     * <p>
+     * If the file cannot be read, then the empty sequence will be returned.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param file The file to read.
+     * @param encoding The character encoding of the file.
+     * @return The output sequence.
+     */
+    public static Seq<String> lines(File file, Charset encoding) {
+        try {
+            return lines(new Scanner(file, encoding.name()));
+        }
+        catch (IOException e) {
+            return empty();
+        }
+    }
+
+    /**
+     * Creates a sequence by reading lines from a file with the default
+     * character encoding.
+     * <p>
+     * If the file cannot be read, then the empty sequence will be returned.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param file The file to read.
+     * @return The output sequence.
+     * @see Charset#defaultCharset
+     */
+    public static Seq<String> lines(Path file) {
+        return lines(file, Charset.defaultCharset());
+    }
+
+    /**
+     * Creates a sequence by reading lines from a file.
+     * <p>
+     * If the file cannot be read, then the empty sequence will be returned.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param file The file to read.
+     * @param encoding The character encoding of the file.
+     * @return The output sequence.
+     */
+    public static Seq<String> lines(Path file, Charset encoding) {
+        try {
+            return lines(new Scanner(file, encoding.name()));
+        }
+        catch (IOException e) {
+            return empty();
+        }
+    }
+
+    /**
+     * Creates a sequence by reading lines from an input stream with the
+     * default character encoding.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param in The input stream to read.
+     * @return The output sequence.
+     * @see Charset#defaultCharset
+     */
+    public static Seq<String> lines(InputStream in) {
+        return lines(in, Charset.defaultCharset());
+    }
+
+    /**
+     * Creates a sequence by reading lines from an input stream.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param in The input stream to read.
+     * @param encoding The character encoding of the stream.
+     * @return The output sequence.
+     */
+    public static Seq<String> lines(InputStream in, Charset encoding) {
+        return lines(new Scanner(in, encoding.name()));
+    }
+
+    /**
+     * Creates a sequence by reading lines from a character stream.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param r The input stream to read.
+     * @return The output sequence.
+     */
+    public static Seq<String> lines(Readable r) {
+        return lines(new Scanner(r));
+    }
+
+    private static Seq<String> lines(Scanner scanner) {
+        // unix          \n
+        // windows       \r\n
+        // macos classic \r
+        return seq(scanner.useDelimiter("\\n|\\r\\n?"));
     }
 
     // AbstractSeq helpers

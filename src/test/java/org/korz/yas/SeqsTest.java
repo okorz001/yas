@@ -1,5 +1,12 @@
 package org.korz.yas;
 
+import java.io.File;
+import java.io.InputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -95,6 +102,73 @@ public class SeqsTest {
     public void seqTestStream() {
         Seq<Integer> result = seq(Stream.of(1, 2, 3));
         assertThat(result, is(list(1, 2, 3)));
+    }
+
+    @Test
+    public void linesTestString() {
+        String str = "one một\ntwo hai\nthree ba";
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(str);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestFile() {
+        File f = Paths.get("src", "test", "resources", "utf8.txt").toFile();
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(f);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestFileEncoding() {
+        File f = Paths.get("src", "test", "resources", "utf16.txt").toFile();
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(f, StandardCharsets.UTF_16);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestPath() {
+        Path p = Paths.get("src", "test", "resources", "utf8.txt");
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(p);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestPathEncoding() {
+        Path p = Paths.get("src", "test", "resources", "utf16.txt");
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(p, StandardCharsets.UTF_16);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestInputStream() throws Exception {
+        Path p = Paths.get("src", "test", "resources", "utf8.txt");
+        InputStream in = Files.newInputStream(p);
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(in);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestInputStreamEncoding() throws Exception {
+        Path p = Paths.get("src", "test", "resources", "utf16.txt");
+        InputStream in = Files.newInputStream(p);
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(in, StandardCharsets.UTF_16);
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    public void linesTestReadable() throws Exception {
+        Path p = Paths.get("src", "test", "resources", "utf8.txt");
+        Reader r = Files.newBufferedReader(p);
+        Seq<String> expected = list("one một", "two hai", "three ba");
+        Seq<String> result = lines(r);
+        assertThat(result, is(expected));
     }
 
     @Test
