@@ -122,6 +122,26 @@ public abstract class Seqs {
         return new Repeat<>(val);
     }
 
+    /**
+     * Creates a sequence from the specified values.
+     * <p>
+     * <code>list(1, 2, 3)</code> creates an equivalent sequence to
+     * <code>cons(1, cons(2, cons(3, empty())))</code>.
+     * @param vals The values.
+     * @param <T> The type of values.
+     * @return The sequence.
+     */
+    // TODO: this will return a persistent list later
+    @SafeVarargs
+    public static <T> Seq<T> list(T... vals) {
+        Seq<T> ret = empty();
+        // cons in reverse
+        for (int i = vals.length - 1; i >= 0; --i) {
+            ret = cons(vals[i], ret);
+        }
+        return ret;
+    }
+
     // AbstractSeq helpers
 
     /**
@@ -256,11 +276,11 @@ public abstract class Seqs {
      * cause side-effects, use {@link Seqs#forEach} instead to force evaluation.
      * @param mapFn The mapping function.
      * @param seq The input sequence.
-     * @param <TIn> The type of values in the input sequence.
      * @param <TOut> The type of values in the output sequence.
-     * @return A new sequence.
+     * @param <TIn> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <TIn, TOut> Seq<TOut> map(Function<? super TIn, ? extends TOut> mapFn,
+    public static <TOut, TIn> Seq<TOut> map(Function<? super TIn, TOut> mapFn,
                                             Seq<TIn> seq) {
         return lazy(() -> {
             if (seq.empty())
@@ -276,11 +296,11 @@ public abstract class Seqs {
      * The returned sequence is <i>lazy</i>. If the function is intended to
      * cause side-effects, use {@link Seqs#forEach} instead to force evaluation.
      * @param mapFn The mapping function.
-     * @param <TIn> The type of values in the input sequence.
      * @param <TOut> The type of values in the output sequence.
+     * @param <TIn> The type of values in the input sequence.
      * @return The function.
      */
-    public static <TIn, TOut> Function<Seq<TIn>, Seq<TOut>> map(Function<? super TIn, ? extends TOut> mapFn) {
+    public static <TOut, TIn> Function<Seq<TIn>, Seq<TOut>> map(Function<? super TIn, TOut> mapFn) {
         return seq -> map(mapFn, seq);
     }
 
@@ -288,10 +308,10 @@ public abstract class Seqs {
      * Unzips a sequence of pairs into a pair of sequences.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param seq The origin sequence.
-     * @param <T1> The type of the first new sequence.
-     * @param <T2> The type of the second new sequence.
-     * @return A pair of new sequences.
+     * @param seq The input sequence of pairs.
+     * @param <T1> The type of the first values in the input sequence pairs.
+     * @param <T2> The type of the second values in the input sequence pairs.
+     * @return A pair of output sequences.
      */
     public static <T1, T2> Pair<Seq<T1>, Seq<T2>> unzip(Seq<Pair<T1, T2>> seq) {
         return new Pair<>(map(Pair::first, seq), map(Pair::second, seq));
@@ -301,8 +321,8 @@ public abstract class Seqs {
      * Returns a function that unzips a sequence of pairs into a pair of sequences.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param <T1> The type of the first output sequence.
-     * @param <T2> The type of the second output sequence.
+     * @param <T1> The type of the first values in the input sequence pairs.
+     * @param <T2> The type of the second values in the input sequence pairs.
      * @return The function.
      */
     public static <T1, T2> Function<Seq<Pair<T1, T2>>, Pair<Seq<T1>, Seq<T2>>> unzip() {
@@ -319,12 +339,11 @@ public abstract class Seqs {
      * <p>
      * To find any value that satisfies a predicate, use {@link Seqs#find}.
      * @param predFn The predicate function.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return A new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> filter(Predicate<? super T> predFn,
-                                    Seq<? extends T> seq) {
+    public static <T> Seq<T> filter(Predicate<? super T> predFn, Seq<T> seq) {
         return lazy(() -> {
             if (seq.empty())
                 return empty();
@@ -343,7 +362,7 @@ public abstract class Seqs {
      * <p>
      * To find any value that satisfies a predicate, use {@link Seqs#find}.
      * @param predFn The predicate function.
-     * @param <T> The type of values in the sequences.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Seq<T>> filter(Predicate<? super T> predFn) {
@@ -354,11 +373,11 @@ public abstract class Seqs {
      * Creates a new sequence by removing duplicates from another sequence.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param seq The sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> distinct(Seq<? extends T> seq) {
+    public static <T> Seq<T> distinct(Seq<T> seq) {
         Set<T> visited = new HashSet<>();
         return filter(visited::add, seq);
     }
@@ -368,7 +387,7 @@ public abstract class Seqs {
      * from another sequence.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param <T> The type of values in the sequences.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Seq<T>> distinct() {
@@ -388,11 +407,11 @@ public abstract class Seqs {
      * @param reduceFn The combining function.
      * @param initial The initial value.
      * @param seq The sequence.
-     * @param <TIn> The type of the sequence.
      * @param <TOut> The type of the result.
+     * @param <TIn> The type of the sequence.
      * @return The combined result.
      */
-    public static <TIn, TOut> TOut foldLeft(BiFunction<? super TOut, ? super TIn, ? extends TOut> reduceFn,
+    public static <TOut, TIn> TOut foldLeft(BiFunction<? super TOut, ? super TIn, ? extends TOut> reduceFn,
                                             TOut initial,
                                             Seq<TIn> seq) {
         TOut result = initial;
@@ -414,11 +433,11 @@ public abstract class Seqs {
      * consider using {@link Seqs#reduce} instead.
      * @param reduceFn The combining function.
      * @param initial The initial value.
-     * @param <TIn> The type of the sequence.
      * @param <TOut> The type of the result.
+     * @param <TIn> The type of the sequence.
      * @return The function.
      */
-    public static <TIn, TOut> Function<Seq<TIn>, TOut> foldLeft(BiFunction<? super TOut, ? super TIn, ? extends TOut> reduceFn,
+    public static <TOut, TIn> Function<Seq<TIn>, TOut> foldLeft(BiFunction<? super TOut, ? super TIn, ? extends TOut> reduceFn,
                                                                 TOut initial) {
         return seq -> foldLeft(reduceFn, initial, seq);
     }
@@ -434,7 +453,6 @@ public abstract class Seqs {
      * @param <T> The type of values in the sequence.
      * @return The reduced value.
      * @throws java.util.NoSuchElementException If the sequence is empty.
-     * @see Seqs#foldLeft
      */
     public static <T> T reduce(BiFunction<? super T, ? super T, ? extends T> reduceFn,
                                Seq<T> seq) {
@@ -484,21 +502,21 @@ public abstract class Seqs {
 
     /**
      * Creates a new sequence that has the same values but in reversed order.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> reverse(Seq<? extends T> seq) {
+    public static <T> Seq<T> reverse(Seq<T> seq) {
         return foldLeft((rest, first) -> cons(first, rest), empty(), seq);
     }
 
     /**
      * Returns a function that creates a new sequence that has the same values
      * but in reversed order.
-     * @param <T> The type of values in the sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
-    public static <T> Function<Seq<? extends T>, Seq<T>> reverse() {
+    public static <T> Function<Seq<T>, Seq<T>> reverse() {
         return Seqs::reverse;
     }
 
@@ -514,11 +532,11 @@ public abstract class Seqs {
      * @param reduceFn The combining function.
      * @param initial The initial value.
      * @param seq The sequence.
-     * @param <TIn> The type of the sequence.
      * @param <TOut> The type of the result.
+     * @param <TIn> The type of the sequence.
      * @return The combined result.
      */
-    public static <TIn, TOut> TOut foldRight(BiFunction<? super TIn, ? super TOut, ? extends TOut> reduceFn,
+    public static <TOut, TIn> TOut foldRight(BiFunction<? super TIn, ? super TOut, ? extends TOut> reduceFn,
                                              Seq<TIn> seq,
                                              TOut initial) {
         if (seq.empty())
@@ -537,11 +555,11 @@ public abstract class Seqs {
      * then considering using {@link Seqs#foldLeft} instead.
      * @param reduceFn The combining function.
      * @param initial The initial value.
-     * @param <TIn> The type of the sequence.
      * @param <TOut> The type of the result.
+     * @param <TIn> The type of the sequence.
      * @return The function.
      */
-    public static <TIn, TOut> Function<Seq<TIn>, TOut> foldRight(BiFunction<? super TIn, ? super TOut, ? extends TOut> reduceFn,
+    public static <TOut, TIn> Function<Seq<TIn>, TOut> foldRight(BiFunction<? super TIn, ? super TOut, ? extends TOut> reduceFn,
                                                                  TOut initial) {
         return seq -> foldRight(reduceFn, seq, initial);
     }
@@ -559,7 +577,7 @@ public abstract class Seqs {
      *         {@link Optional} if is found.
      */
     public static <T> Optional<T> find(Predicate<? super T> predFn,
-                                       Seq<? extends T> seq) {
+                                       Seq<T> seq) {
         // foldLeft with short circuit
         while (!seq.empty()) {
             T first = seq.first();
@@ -591,7 +609,7 @@ public abstract class Seqs {
      * @param predFn The predicate.
      * @param seq The sequence.
      * @param <T> The type of values in the sequence.
-     * @return {@code true} if any value satifies the predicate.
+     * @return {@code true} if any value satisfies the predicate.
      */
     public static <T> boolean any(Predicate<? super T> predFn, Seq<T> seq) {
         return find(predFn, seq).isPresent();
@@ -621,7 +639,7 @@ public abstract class Seqs {
      * @param predFn The predicate.
      * @param seq The sequence.
      * @param <T> The type of values in the sequence.
-     * @return {@code true} if all value satify the predicate.
+     * @return {@code true} if all value satisfy the predicate.
      */
     public static <T> boolean all(Predicate<? super T> predFn, Seq<T> seq) {
         // find value that does not satisfy
@@ -725,12 +743,12 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param predFn The predicate.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
     public static <T> Seq<T> takeWhile(Predicate<? super T> predFn,
-                                       Seq<? extends T> seq) {
+                                       Seq<T> seq) {
         return lazy(() -> {
             if (seq.empty())
                 return empty();
@@ -747,7 +765,7 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param predFn The predicate.
-     * @param <T> The type of values in the sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Seq<T>> takeWhile(Predicate<? super T> predFn) {
@@ -759,12 +777,12 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param n The number of values to include.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      * @throws IllegalArgumentException If n is negative.
      */
-    public static <T> Seq<T> take(int n, Seq<? extends T> seq) {
+    public static <T> Seq<T> take(int n, Seq<T> seq) {
         if (n < 0)
             throw new IllegalArgumentException("n < 0");
         AtomicInteger count = new AtomicInteger(n);
@@ -777,7 +795,7 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param n The number of values to include.
-     * @param <T> The type of values in the sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      * @throws IllegalArgumentException If n is negative.
      */
@@ -791,12 +809,12 @@ public abstract class Seqs {
      * Creates a sequence of all values in another sequence after the predicate
      * fails once.
      * @param predFn The predicate.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
     public static <T> Seq<T> dropWhile(Predicate<? super T> predFn,
-                                       Seq<? extends T> seq) {
+                                       Seq<T> seq) {
         while (!seq.empty() && predFn.test(seq.first()))
             seq = seq.rest();
         return upcast(seq);
@@ -806,7 +824,7 @@ public abstract class Seqs {
      * Returns a function that creates a sequence of all values in another
      * sequence after the predicate fails once.
      * @param predFn The predicate.
-     * @param <T> The type of values in the sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Seq<T>> dropWhile(Predicate<? super T> predFn) {
@@ -816,12 +834,12 @@ public abstract class Seqs {
     /**
      * Creates a sequence without the first N values of another sequence.
      * @param n The number of values to exclude.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      * @throws IllegalArgumentException If n is negative.
      */
-    public static <T> Seq<T> drop(int n, Seq<? extends T> seq) {
+    public static <T> Seq<T> drop(int n, Seq<T> seq) {
         if (n < 0)
             throw new IllegalArgumentException("n < 0");
         AtomicInteger count = new AtomicInteger(n);
@@ -832,7 +850,7 @@ public abstract class Seqs {
      * Returns a function that creates a sequence without the first N values of
      * another sequence.
      * @param n The number of values to exclude.
-     * @param <T> The type of values in the sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      * @throws IllegalArgumentException If n is negative.
      */
@@ -844,11 +862,11 @@ public abstract class Seqs {
      * Returns the Nth value in a sequence, using zero-based indexing.
      * @param n The index of the value.
      * @param seq The sequence.
-     * @param <T> The type of the Nth value.
+     * @param <T> The type of values in the sequence.
      * @return An {@link Optional} with the Nth value, or an empty
      *         {@link Optional} if the sequence has less than N values.
      */
-    public static <T> Optional<T> nth(int n, Seq<? extends T> seq) {
+    public static <T> Optional<T> nth(int n, Seq<T> seq) {
         seq = drop(n, seq);
         return seq.empty() ? Optional.empty() : Optional.of(seq.first());
     }
@@ -857,7 +875,7 @@ public abstract class Seqs {
      * Returns a function that returns the Nth value in a sequence, using
      * zero-based indexing.
      * @param n The index of the value.
-     * @param <T> The type of the values in the sequence.
+     * @param <T> The type of values in the sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Optional<T>> nth(int n) {
@@ -870,10 +888,10 @@ public abstract class Seqs {
      * Creates a new sequence by concatenating two sequences.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param first The first origin sequence.
-     * @param second The second origin sequence.
+     * @param first The first input sequence.
+     * @param second The second input sequence.
      * @param <T> The type of values in the output sequence.
-     * @return The new sequence.
+     * @return The output sequence.
      */
     public static <T> Seq<T> concat(Seq<? extends T> first,
                                     Seq<? extends T> second) {
@@ -889,30 +907,33 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param second The sequence to append.
-     * @param <T> The type of values in the input sequence.
+     * @param <TOut> The type of values in the output sequence.
+     * @param <T1> The type of values in the input sequence.
+     * @param <T2> The type of values in the second sequence.
      * @return The function.
      */
-    public static <T> Function<Seq<T>, Seq<T>> concat(Seq<? extends T> second) {
+    public static <TOut, T1 extends TOut, T2 extends TOut> Function<Seq<T1>, Seq<TOut>> concat(Seq<T2> second) {
         return seq -> concat(seq, second);
     }
 
     /**
      * Creates an infinite sequence by repeating another sequence.
      * <p>
-     * If the origin sequence consists of a single value, consider using
+     * If the input sequence consists of a single value, consider using
      * {@link Seqs#repeat} instead.
-     * @param seq The origin sequence.
+     * @param seq The input sequence.
      * @param <T> The type of values in the sequence.
-     * @return A new sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> cycle(Seq<? extends T> seq) {
+    public static <T> Seq<T> cycle(Seq<T> seq) {
         return lazy(() -> concat(seq, cycle(seq)));
     }
 
     /**
-     * Returns a function that creates an infinite sequence by repeating another sequence.
+     * Returns a function that creates an infinite sequence by repeating
+     * another sequence.
      * <p>
-     * If the origin sequence consists of a single value, consider using
+     * If the input sequence consists of a single value, consider using
      * {@link Seqs#repeat} instead.
      * @param <T> The type of values in the sequence.
      * @return The function.
@@ -929,8 +950,8 @@ public abstract class Seqs {
      * <code>(1, 2, 3, 4, 5)</code>.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param seq The origin sequence.
-     * @return A new sequence which does not contain any {@link Seq} instances.
+     * @param seq The input sequence.
+     * @return The output sequence.
      */
     public static Seq<Object> flatten(Seq<?> seq) {
         return lazy(() -> {
@@ -951,9 +972,10 @@ public abstract class Seqs {
      * <code>(1, 2, 3, 4, 5)</code>.
      * <p>
      * The returned sequence is <i>lazy</i>.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
-    public static Function<Seq<?>, Seq<Object>> flatten() {
+    public static <T> Function<Seq<T>, Seq<Object>> flatten() {
         return Seqs::flatten;
     }
 
@@ -967,10 +989,10 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param seq A homogeneous sequence of sequences.
-     * @param <T> The type of values in the new sequence.
-     * @return A new sequence.
+     * @param <T> The type of values in the nested input sequences.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> flattenSafe(Seq<? extends Seq<? extends T>> seq) {
+    public static <T> Seq<T> flattenSafe(Seq<? extends Seq<T>> seq) {
         return lazy(() -> {
             if (seq.empty())
                 return empty();
@@ -987,10 +1009,11 @@ public abstract class Seqs {
      * resulting sequence will still contain sequences.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param <T> The type of values in the output sequence.
+     * @param <TOut> The type of values in the output sequence.
+     * @param <TIn> The type of values in the input sequence.
      * @return The function.
      */
-    public static <T> Function<Seq<Seq<T>>, Seq<T>> flattenSafe() {
+    public static <TOut, TIn extends Seq<TOut>> Function<Seq<TIn>, Seq<TOut>> flattenSafe() {
         return Seqs::flattenSafe;
     }
 
@@ -998,23 +1021,25 @@ public abstract class Seqs {
      * Transforms each value in a sequence into a sequence and flattens those
      * sequences into a single sequence.
      * @param mapFn The mapping function.
-     * @param seq The origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <TOut> The type of values in the output sequence.
+     * @param <TIn> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<T> flatMap(Function<? super T, ? extends Seq<? extends T>> mapFn,
-                                     Seq<? extends T> seq) {
-        return flattenSafe(map(mapFn, seq));
+    public static <TOut, TIn> Seq<TOut> flatMap(Function<? super TIn, ? extends Seq<TOut>> mapFn,
+                                                Seq<TIn> seq) {
+        return upcast(flattenSafe(map(mapFn, seq)));
     }
 
     /**
      * Returns a function that transforms each value in a sequence into a
      * sequence and flattens those sequences into a single sequence.
      * @param mapFn The mapping function.
-     * @param <T> The type of values in the sequence.
+     * @param <TOut> The type of values in the output sequence.
+     * @param <TIn> The type of values in the input sequence.
      * @return The function.
      */
-    public static <T> Function<Seq<T>, Seq<T>> flatMap(Function<? super T, ? extends Seq<? extends T>> mapFn) {
+    public static <TOut, TIn> Function<Seq<TIn>, Seq<TOut>> flatMap(Function<? super TIn, ? extends Seq<TOut>> mapFn) {
         return seq -> flatMap(mapFn, seq);
     }
 
@@ -1029,7 +1054,7 @@ public abstract class Seqs {
      * @param fn The function to generate values.
      * @param initial The first value of the sequence.
      * @param <T> The type of values in the sequence.
-     * @return A new sequence.
+     * @return The output sequence.
      */
     public static <T> Seq<T> iterate(Function<? super T, ? extends T> fn,
                                      T initial) {
@@ -1043,7 +1068,7 @@ public abstract class Seqs {
      * The returned sequence is <i>lazy</i>.
      * <p>
      * This function is equivalent to <code>range(Integer.MAX_VALUE)</code>.
-     * @return A new sequence.
+     * @return The output sequence.
      */
     public static Seq<Integer> range() {
         return range(Integer.MAX_VALUE);
@@ -1057,7 +1082,7 @@ public abstract class Seqs {
      * <p>
      * This function is equivalent to <code>range(0, end)</code>.
      * @param end The ending bound, exclusive.
-     * @return A new sequence.
+     * @return The output sequence.
      */
     public static Seq<Integer> range(int end) {
         return range(0, end);
@@ -1071,7 +1096,7 @@ public abstract class Seqs {
      * This function is equivalent to <code>range(start, end, 1)</code>.
      * @param start The first value of the sequence.
      * @param end The ending bound, exclusive.
-     * @return A new sequence.
+     * @return The output sequence.
      */
     public static Seq<Integer> range(int start, int end) {
         return range(start, end, 1);
@@ -1085,7 +1110,7 @@ public abstract class Seqs {
      * @param start The first value of the sequence.
      * @param end The ending bound, exclusive.
      * @param step The increment between values in the sequence.
-     * @return A new sequence.
+     * @return The output sequence.
      */
     public static Seq<Integer> range(int start, int end, int step) {
         return takeWhile(x -> x < end, iterate(x -> x + step, start));
@@ -1096,17 +1121,18 @@ public abstract class Seqs {
     /**
      * Zips two sequences into a sequence of pairs.
      * <p>
-     * The new sequence will terminate after either origin sequence terminates.
+     * The output sequence will terminate after either input sequence
+     * terminates.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param first The first origin sequence.
-     * @param second The second origin sequence.
-     * @param <T1> The type of the first value of pairs in the new sequence.
-     * @param <T2> The type of the second value of pairs in the new sequence.
-     * @return A new sequence of pairs.
+     * @param first The first input sequence.
+     * @param second The second input sequence.
+     * @param <T1> The type of values in the first input sequence.
+     * @param <T2> The type of values in the second input sequence.
+     * @return The output sequence of pairs.
      */
-    public static <T1, T2> Seq<Pair<T1, T2>> zip(Seq<? extends T1> first,
-                                                 Seq<? extends T2> second) {
+    public static <T1, T2> Seq<Pair<T1, T2>> zip(Seq<T1> first,
+                                                 Seq<T2> second) {
         return lazy(() -> {
             if (first.empty() || second.empty())
                 return empty();
@@ -1118,12 +1144,13 @@ public abstract class Seqs {
     /**
      * Returns a function that zips two sequences into a sequence of pairs.
      * <p>
-     * The new sequence will terminate after either origin sequence terminates.
+     * The output sequence will terminate after either input sequence
+     * terminates.
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param second The second sequence.
-     * @param <T1> The type of the first value of pairs in the new sequence.
-     * @param <T2> The type of the second value of pairs in the new sequence.
+     * @param <T1> The type of values in the input sequence.
+     * @param <T2> The type of values in the second sequence.
      * @return The function.
      */
     public static <T1, T2> Function<Seq<T1>, Seq<Pair<T1, T2>>> zip(Seq<T2> second) {
@@ -1137,11 +1164,11 @@ public abstract class Seqs {
      * <code>((0, "a"), (1, "b"), (2, "c"))</code>.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param seq The origin sequence.
-     * @param <T> The type of the second value of pairs in the new sequence.
-     * @return The new sequence.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input sequence.
+     * @return The output sequence.
      */
-    public static <T> Seq<Pair<Integer, T>> enumerate(Seq<? extends T> seq) {
+    public static <T> Seq<Pair<Integer, T>> enumerate(Seq<T> seq) {
         return zip(range(), seq);
     }
 
@@ -1153,7 +1180,7 @@ public abstract class Seqs {
      * <code>((0, "a"), (1, "b"), (2, "c"))</code>.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param <T> The type of the second value of pairs in the new sequence.
+     * @param <T> The type of values in the input sequence.
      * @return The function.
      */
     public static <T> Function<Seq<T>, Seq<Pair<Integer, T>>> enumerate() {
@@ -1165,17 +1192,17 @@ public abstract class Seqs {
     /**
      * Creates a new sequence by alternating values from two sequences.
      * <p>
-     * Once either origin sequence is completed, the remaining values of the
+     * Once either input sequence is completed, the remaining values of the
      * other sequence will be returned.
      * <p>
      * For example: <code>("a", "b") and (0, 1, 2)</code> will generate
      * <code>("a", 0, "b", 1, 2)</code>.
      * <p>
      * The returned sequence is <i>lazy</i>.
-     * @param first The first origin sequence.
-     * @param second The second origin sequence.
-     * @param <T> The type of values in the new sequence.
-     * @return The new sequence.
+     * @param first The first input sequence.
+     * @param second The second input sequence.
+     * @param <T> The type of values in the output sequence.
+     * @return The output sequence.
      */
     public static <T> Seq<T> interleave(Seq<? extends T> first,
                                         Seq<? extends T> second) {
@@ -1195,7 +1222,7 @@ public abstract class Seqs {
      * Returns the function creates a new sequence by alternating values from
      * two sequences.
      * <p>
-     * Once either origin sequence is completed, the remaining values of the
+     * Once either input sequence is completed, the remaining values of the
      * other sequence will be returned.
      * <p>
      * For example: <code>("a", "b") and (0, 1, 2)</code> will generate
@@ -1203,10 +1230,12 @@ public abstract class Seqs {
      * <p>
      * The returned sequence is <i>lazy</i>.
      * @param second The second sequence.
-     * @param <T> The type of values in the new sequence.
+     * @param <TOut> The type of values in the output sequence.
+     * @param <T1> The type of values in the input sequence.
+     * @param <T2> The type of values in the second sequence.
      * @return The function.
      */
-    public static <T> Function<Seq<T>, Seq<T>> interleave(Seq<? extends T> second) {
+    public static <TOut, T1 extends TOut, T2 extends TOut> Function<Seq<T1>, Seq<TOut>> interleave(Seq<T2> second) {
         return seq -> interleave(seq, second);
     }
 }

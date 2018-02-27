@@ -3,7 +3,6 @@ package org.korz.yas;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -13,10 +12,16 @@ import static org.korz.yas.Seqs.*;
 import static org.korz.yas.Seqs.empty;
 
 public class SeqsTest {
+    // TODO: is this generally useful?
+    private static <T1, T2> Pair<T1, T2> pair(T1 first, T2 second) {
+        return new Pair<>(first, second);
+    }
+
     @Test
     public void emptyTest() {
         Seq<Object> seq = empty();
         assertThat(seq.empty(), is(true));
+        assertThat(seq.rest(), is(seq));
     }
 
     @Test
@@ -72,6 +77,13 @@ public class SeqsTest {
     }
 
     @Test
+    public void listTest() {
+        Seq<String> result = list("a", "b", "c");
+        Seq<String> expected = cons("a", cons("b", cons("c", empty())));
+        assertThat(result, is(expected));
+    }
+
+    @Test
     public void toStringEmptyTest() {
         assertThat(empty().toString(), is("()"));
     }
@@ -103,316 +115,290 @@ public class SeqsTest {
         assertThat(a.hashCode(), not(b.hashCode()));
     }
 
+    // from here on, we can assume Seqs.list works correctly
+
     @Test
     public void mapTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> expected = cons("A", cons("B", cons("C", empty())));
-        Seq<String> result = map(String::toUpperCase, seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list("a", "b", "c")
+                .apply(map(String::toUpperCase));
+        assertThat(result, is(list("A", "B", "C")));
     }
 
     @Test
     public void unzipTest() {
-        Seq<Pair<String, Integer>> seq = cons(new Pair<>("a", 1), cons(new Pair<>("b", 2), empty()));
-        Seq<String> first = cons("a", cons("b", empty()));
-        Seq<Integer> second = cons(1, cons(2, empty()));
-        Pair<Seq<String>, Seq<Integer>> result = unzip(seq);
-        assertThat(result.first(), is(first));
-        assertThat(result.second(), is(second));
+        Pair<Seq<String>, Seq<Integer>> result = list(pair("a", 1), pair("b", 2))
+                .apply(unzip());
+        assertThat(result.first(), is(list("a", "b")));
+        assertThat(result.second(), is(list(1, 2)));
     }
 
     @Test
     public void filterTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Seq<Integer> expected = cons(1, cons(3, empty()));
-        Seq<Integer> result = filter(x -> x % 2 == 1, seq);
+        Seq<Integer> result = list(1, 2, 3)
+                .apply(filter(x -> x % 2 == 1));
+        Seq<Integer> expected = list(1, 3);
         assertThat(result, is(expected));
     }
 
     @Test
     public void distinctTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(1, empty())));
-        Seq<Integer> expected = cons(1, cons(2, empty()));
-        Seq<Integer> result = distinct(seq);
-        assertThat(result, is(expected));
+        Seq<Integer> result = list(1, 2, 1)
+                .apply(distinct());
+        assertThat(result, is(list(1, 2)));
     }
 
     @Test
     public void foldLeftTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        String result = foldLeft(String::concat, "_", seq);
+        String result = list("a", "b", "c")
+                .apply(foldLeft(String::concat, "_"));
         assertThat(result, is("_abc"));
     }
 
     @Test
     public void reduceTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Integer result = reduce(Integer::sum, seq);
+        int result = list(1, 2, 3)
+                .apply(reduce(Integer::sum));
         assertThat(result, is(6));
     }
 
     @Test
     public void forEachTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
         StringBuilder str = new StringBuilder();
-        forEach(str::append, seq);
+        list("a", "b", "c")
+                .apply(forEach(str::append));
         assertThat(str.toString(), is("abc"));
     }
 
     @Test
     public void reverseTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> expected = cons("c", cons("b", cons("a", empty())));
-        Seq<String> result = reverse(seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list("a", "b", "c")
+                .apply(reverse());
+        assertThat(result, is(list("c", "b", "a")));
     }
 
     @Test
     public void foldRightTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        String result = foldRight(String::concat, seq, "_");
+        String result = list("a", "b", "c")
+                .apply(foldRight(String::concat,"_"));
         assertThat(result, is("abc_"));
     }
 
     @Test
     public void findTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Optional<Integer> result = find(i -> i % 2 == 1, seq);
+        Optional<Integer> result = list(1, 2, 3)
+                .apply(find(i -> i % 2 == 1));
         assertThat(result, is(Optional.of(1)));
     }
 
     @Test
     public void findNoneTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        Optional<Integer> result = find(i -> i > 4, seq);
+        Optional<Integer> result = list(1, 2, 3)
+                .apply(find(i -> i > 4));
         assertThat(result, is(Optional.empty()));
     }
 
     @Test
     public void anyTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        assertThat(any(i -> i > 1, seq), is(true));
+        boolean result = list(1, 2, 3)
+                .apply(any(i -> i > 1));
+        assertThat(result, is(true));
     }
 
     @Test
     public void anyTestFalse() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        assertThat(any(i -> i > 10, seq), is(false));
+        boolean result = list(1, 2, 3)
+                .apply(any(i -> i > 10));
+        assertThat(result, is(false));
     }
 
     @Test
     public void allTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        assertThat(all(i -> i > 0, seq), is(true));
+        boolean result = list(1, 2, 3)
+                .apply(all(i -> i > 0));
+        assertThat(result, is(true));
     }
 
     @Test
     public void allTestFalse() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, empty())));
-        assertThat(all(i -> i > 1, seq), is(false));
+        boolean result = list(1, 2, 3)
+                .apply(all(i -> i > 1));
+        assertThat(result, is(false));
     }
 
     @Test
     public void minTest() {
-        Seq<Integer> seq = cons(2, cons(1, cons(3, empty())));
-        Integer result = min(Integer::compareTo, seq);
+        int result = list(2, 1, 3)
+                .apply(min(Integer::compareTo));
         assertThat(result, is(1));
     }
 
     @Test
     public void maxTest() {
-        Seq<Integer> seq = cons(1, cons(3, cons(2, empty())));
-        Integer result = max(Integer::compareTo, seq);
+        int result = list(1, 3, 2)
+                .apply(max(Integer::compareTo));
         assertThat(result, is(3));
     }
 
     @Test
     public void takeWhileTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, cons( 2, empty()))));
-        Seq<Integer> expected = cons(1, cons(2, empty()));
-        Seq<Integer> result = takeWhile(x -> x < 3, seq);
-        assertThat(result, is(expected));
+        Seq<Integer> result = list(1, 2, 3, 2)
+                .apply(takeWhile(x -> x < 3));
+        assertThat(result, is(list(1, 2)));
     }
 
     @Test
     public void takeTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> expected = cons("a", cons("b", empty()));
-        Seq<String> result = take(2, seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list("a", "b", "c")
+                .apply(take(2));
+        assertThat(result, is(list("a", "b")));
     }
 
     @Test
     public void takeTestTooMany() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> result = take(100, seq);
-        assertThat(result, is(seq));
+        Seq<String> result = list("a", "b", "c")
+                .apply(take(100));
+        assertThat(result, is(list("a", "b", "c")));
     }
 
     @Test
     public void dropWhileTest() {
-        Seq<Integer> seq = cons(1, cons(2, cons(3, cons( 2, empty()))));
-        Seq<Integer> expected = cons(3, cons(2, empty()));
-        Seq<Integer> result = dropWhile(x -> x < 3, seq);
-        assertThat(result, is(expected));
+        Seq<Integer> result = list(1, 2, 3, 2)
+                .apply(dropWhile(x -> x < 3));
+        assertThat(result, is(list(3, 2)));
     }
 
     @Test
     public void dropTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> expected = cons("c", empty());
-        Seq<String> result = drop(2, seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list("a", "b", "c", "d")
+                .apply(drop(2));
+        assertThat(result, is(list("c", "d")));
     }
 
     @Test
     public void dropTestTooMany() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Seq<String> result = drop(100, seq);
+        Seq<String> result = list("a", "b", "c")
+                .apply(drop(100));
         assertThat(result, is(empty()));
     }
 
     @Test
     public void nthTest() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Optional<String> result = nth(2, seq);
+        Optional<String> result = list("a", "b", "c")
+                .apply(nth(2));
         assertThat(result, is(Optional.of("c")));
     }
 
     @Test
     public void nthTestTooMany() {
-        Seq<String> seq = cons("a", cons("b", cons("c", empty())));
-        Optional<String> result = nth(100, seq);
+        Optional<String> result = list("a", "b", "c")
+                .apply(nth(100));
         assertThat(result, is(Optional.empty()));
     }
 
     @Test
     public void concatTest() {
-        Seq<String> a = cons("a", cons("b", empty()));
-        Seq<String> b = cons("c", cons("d", empty()));
-        Seq<String> expected = cons("a", cons("b", cons("c", cons( "d", empty()))));
-        Seq<String> result = concat(a, b);
-        assertThat(result, is(expected));
+        Seq<Object> result = list("a", "b")
+                .apply(concat(list(1, 2)));
+        assertThat(result, is(list("a", "b", 1, 2)));
     }
 
     @Test
     public void cycleTest() {
-        Seq<String> seq = cons("a", cons("b", empty()));
-        Seq<String> expected = cons("a", cons("b", cons("a", cons( "b", cons("a", empty())))));
-        Seq<String> result = take(5, cycle(seq));
-        assertThat(result, is(expected));
+        Seq<String> result = list("a", "b")
+                .apply(cycle())
+                .apply(take(5));
+        assertThat(result, is(list("a", "b", "a", "b", "a")));
     }
 
     @Test
     public void flattenTest() {
-        Seq<?> a = cons("a", cons("b", empty()));
-        Seq<?> b = cons("c", cons("d", empty()));
         // ((a, b), 0, (c, d))
-        Seq<?> seq = cons(a, cons(0, cons(b, empty())));
-        Seq<?> expected = cons("a", cons("b", cons(0, cons("c", cons( "d", empty())))));
-        Seq<?> result = flatten(seq);
-        assertThat(result, is(expected));
+        Seq<Object> result = list(list("a", "b"), 0, list("c", "d"))
+            .apply(flatten());
+        assertThat(result, is(list("a", "b", 0, "c", "d")));
     }
 
     @Test
-    public void flattenTestMany() {
-        Seq<?> a = cons("a", cons("b", empty()));
+    public void flattenTestRecursive() {
         // (((a, b)), 0)
-        Seq<?> seq = cons(cons(a, empty()), cons(0, empty()));
-        Seq<?> expected = cons("a", cons("b", cons(0, empty())));
-        Seq<Object> result = flatten(seq);
-        assertThat(result, is(expected));
+        Seq<Object> result = list(list(list("a", "b")), 0)
+                .apply(flatten());
+        assertThat(result, is(list("a", "b", 0)));
     }
 
     @Test
     public void flattenSafeTest() {
-        Seq<String> a = cons("a", cons("b", empty()));
-        Seq<String> b = cons("c", cons("d", empty()));
         // ((a, b), (c, d))
-        Seq<Seq<String>> seq = cons(a, cons(b, empty()));
-        Seq<String> expected = cons("a", cons("b", cons("c", cons( "d", empty()))));
-        Seq<String> result = flattenSafe(seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list(list("a", "b"), list("c", "d"))
+                .apply(flattenSafe());
+        assertThat(result, is(list("a", "b", "c", "d")));
     }
 
     @Test
     public void flatMapTest() {
-        Seq<Integer> seq = cons(0, cons(1, empty()));
-        Function<Integer, Seq<Integer>> f = x -> cons(x + 10, cons(x + 100, empty()));
-        Seq<Integer> expected = cons(10, cons(100, cons(11, cons(101, empty()))));
-        Seq<Integer> result = flatMap(f, seq);
-        assertThat(result, is(expected));
+        Seq<String> result = list(0, 1)
+                .apply(flatMap(x -> list(Integer.toString(x + 10),
+                                         Integer.toString(x + 100))));
+        assertThat(result, is(list("10", "100", "11", "101")));
     }
 
     @Test
     public void iterateTest() {
-        Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
-        Seq<Integer> result = take(3, iterate(x -> x + 1, 0));
-        assertThat(expected, is(result));
+        Seq<Integer> result = iterate(x -> x + 1, 0)
+                .apply(take(3));
+        assertThat(result, is(list(0, 1, 2)));
     }
 
     @Test
     public void range1Test() {
-        Seq<Integer> expected = cons(0, cons(1, cons(2, empty())));
-        Seq<Integer> result = range(3);
-        assertThat(expected, is(result));
+        assertThat(range(3), is(list(0, 1, 2)));
     }
 
     @Test
     public void range2Test() {
-        Seq<Integer> expected = cons(2, cons(3, cons(4, empty())));
-        Seq<Integer> result = range(2, 5);
-        assertThat(expected, is(result));
+        assertThat(range(2, 5), is(list(2, 3, 4)));
     }
 
     @Test
     public void range3Test() {
-        Seq<Integer> expected = cons(1, cons(3, cons(5, empty())));
-        Seq<Integer> result = range(1, 6, 2);
-        assertThat(expected, is(result));
+        assertThat(range(1, 6, 2), is(list(1, 3, 5)));
     }
 
     @Test
     public void zipTest() {
-        Seq<String> first = cons("a", cons("b", empty()));
-        Seq<Integer> second = cons(1, cons(2, empty()));
-        Seq<Pair<String, Integer>> expected = cons(new Pair<>("a", 1), cons(new Pair<>("b", 2), empty()));
-        Seq<Pair<String, Integer>> result = zip(first, second);
-        assertThat(result, is(expected));
+        Seq<Pair<String, Integer>> result = list("a", "b")
+                .apply(zip(list(1, 2)));
+        assertThat(result, is(list(pair("a", 1), pair("b", 2))));
     }
 
     @Test
     public void zipTestShort() {
-        Seq<String> first = cons("a", cons("b", empty()));
-        Seq<Integer> second = cons(1, empty());
-        Seq<Pair<String, Integer>> expected = cons(new Pair<>("a", 1), empty());
-        Seq<Pair<String, Integer>> result = zip(first, second);
-        assertThat(result, is(expected));
+        Seq<Pair<String, Integer>> result = list("a", "b")
+                .apply(zip(list(1)));
+        assertThat(result, is(list(pair("a", 1))));
     }
 
     @Test
     public void enumerateTest() {
-        Seq<String> seq = cons("a", cons("b", empty()));
-        Seq<Pair<Integer, String>> expected = cons(new Pair<>(0, "a"), cons(new Pair<>(1, "b"), empty()));
-        Seq<Pair<Integer, String>> result = enumerate(seq);
-        assertThat(result, is(expected));
+        Seq<Pair<Integer, String>> result = list("a", "b")
+                .apply(enumerate());
+        assertThat(result, is(list(pair(0, "a"), pair(1, "b"))));
     }
 
     @Test
     public void interleaveTest() {
-        Seq<String> first = cons("a", cons("b", empty()));
-        Seq<Integer> second = cons(0, cons(1, empty()));
-        Seq<Object> expected = cons("a", cons(0, cons("b", cons(1, empty()))));
-        Seq<Object> result = interleave(first, second);
-        assertThat(result, is(expected));
+        Seq<?> result = list("a", "b")
+                .apply(interleave(list(0, 1)));
+        assertThat(result, is(list("a", 0, "b", 1)));
     }
 
     @Test
     public void interleaveTestEmpty() {
-        Seq<String> seq = cons("a", cons("b", empty()));
-        Seq<Object> result = interleave(seq, empty());
-        assertThat(result, is(seq));
-        result = interleave(empty(), seq);
-        assertThat(result, is(seq));
+        Seq<String> result = list("a", "b")
+                .apply(interleave(empty()));
+        assertThat(result, is(list("a", "b")));
+        result = Seqs.<String>empty()
+                .apply(interleave(list("a", "b")));
+        assertThat(result, is(list("a", "b")));
     }
 }
