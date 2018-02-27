@@ -1,7 +1,10 @@
 package org.korz.yas;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,6 +13,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Commonly used functions for manipulating or creating {@link Seq} instances.
@@ -42,7 +46,7 @@ import java.util.function.Supplier;
  * <b>Function form:</b> This form does not accept a {@link Seq} but returns a
  * {@link Function} that accepts a {@link Seq} instead. The
  * {@link Seq#apply Seq.apply} methods can be used to concisely chain functions
- * to apply in order, similar to a {@link java.util.stream.Stream}.
+ * to apply in order, similar to a {@link Stream}.
  * <pre><code>
  * int sum = range(3)
  *     .apply(filter(n -&gt; n % 2 == 0))
@@ -140,6 +144,75 @@ public abstract class Seqs {
             ret = cons(vals[i], ret);
         }
         return ret;
+    }
+
+    /**
+     * Creates a sequence from an {@link Iterable}.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param it The input iterable.
+     * @param <T> The type of values in the iterable.
+     * @return The output sequence.
+     */
+    public static <T> Seq<T> seq(Iterable<T> it) {
+        return seq(it.iterator());
+    }
+
+    /**
+     * Creates a sequence from an {@link Iterator}.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param it The input iterator.
+     * @param <T> The type of values in the iterator.
+     * @return The output sequence.
+     */
+    public static <T> Seq<T> seq(Iterator<T> it) {
+        return lazy(() -> {
+            if (it.hasNext())
+                return cons(it.next(), seq(it));
+            return empty();
+        });
+    }
+
+    /**
+     * Creates a sequence from an array.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param arr The input array.
+     * @param <T> The type of values in the array.
+     * @return The output sequence.
+     */
+    public static <T> Seq<T> seq(T[] arr) {
+        return seq(Arrays.asList(arr));
+    }
+
+    /**
+     * Creates a sequence from an {@link Enumeration}.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param e The input enumeration.
+     * @param <T> The type of values in the enumeration.
+     * @return The output sequence.
+     */
+    public static <T> Seq<T> seq(Enumeration<T> e) {
+        return lazy(() -> {
+            if (e.hasMoreElements())
+                return cons(e.nextElement(), seq(e));
+            return empty();
+        });
+    }
+
+    /**
+     * Creates a sequence from a {@link Stream}.
+     * <p>
+     * The returned sequence is <i>lazy</i>.
+     * @param stream The input stream.
+     * @param <T> The type of values in the stream.
+     * @return The output sequence.
+     */
+    public static <T> Seq<T> seq(Stream<T> stream) {
+        // BaseStream has iterator() but does not implement Iterable...
+        return seq(stream.iterator());
     }
 
     // AbstractSeq helpers

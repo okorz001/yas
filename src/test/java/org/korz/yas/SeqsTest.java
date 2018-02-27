@@ -1,8 +1,11 @@
 package org.korz.yas;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 
@@ -68,6 +71,30 @@ public class SeqsTest {
         Seq<Integer> expected = cons(1, cons(1, cons(1, empty())));
         Seq<Integer> result = take(3, repeat(1));
         assertThat(result, is(expected));
+    }
+
+    @Test
+    public void seqTestIterable() {
+        Seq<Integer> result = seq(Arrays.asList(1, 2, 3));
+        assertThat(result, is(list(1, 2, 3)));
+    }
+
+    @Test
+    public void seqTestArray() {
+        Seq<Integer> result = seq(new Integer[] {1, 2, 3});
+        assertThat(result, is(list(1, 2, 3)));
+    }
+
+    @Test
+    public void seqTestEnumeration() {
+        Seq<Integer> result = seq(Collections.enumeration(Arrays.asList(1, 2, 3)));
+        assertThat(result, is(list(1, 2, 3)));
+    }
+
+    @Test
+    public void seqTestStream() {
+        Seq<Integer> result = seq(Stream.of(1, 2, 3));
+        assertThat(result, is(list(1, 2, 3)));
     }
 
     @Test
