@@ -84,7 +84,7 @@ public abstract class Seqs {
      * @return The empty sequence.
      */
     public static <T> Seq<T> empty() {
-        return Empty.instance();
+        return PListEmpty.instance();
     }
 
     /**
@@ -133,22 +133,18 @@ public abstract class Seqs {
     }
 
     /**
-     * Creates a sequence from the specified values.
-     * <p>
-     * <code>list(1, 2, 3)</code> creates an equivalent sequence to
-     * <code>cons(1, cons(2, cons(3, empty())))</code>.
-     * @param vals The values.
-     * @param <T> The type of values.
-     * @return The sequence.
+     * Creates a list from the specified values.
+     * @param vals The values
+     * @param <T> The type of values in the list.
+     * @return The list.
      */
-    // TODO: this will return a persistent list later
     @SafeVarargs
-    public static <T> Seq<T> list(T... vals) {
-        Seq<T> ret = empty();
-        // cons in reverse
-        for (int i = vals.length - 1; i >= 0; --i) {
-            ret = cons(vals[i], ret);
-        }
+    public static <T> PList<T> list(T... vals) {
+        // people expect: list(1, 2, 3) -> (1, 2, 3)
+        // but into uses foldLeft(cons): (3, 2, 1)
+        PList<T> ret = PListEmpty.instance();
+        for (int i = vals.length - 1; i >= 0; --i)
+            ret = ret.conj(vals[i]);
         return ret;
     }
 
@@ -219,6 +215,36 @@ public abstract class Seqs {
     public static <T> Seq<T> seq(Stream<T> stream) {
         // BaseStream has iterator() but does not implement Iterable...
         return seq(stream.iterator());
+    }
+
+    /**
+     * Creates an iterator backed by a sequence.
+     * @param seq The sequence.
+     * @param <T> The type of values in the sequence.
+     * @return The iterator.
+     */
+    public static <T> Iterator<T> iterator(Seq<T> seq) {
+        return new SeqIterator<>(seq);
+    }
+
+    private static class SeqIterator<T> implements Iterator<T> {
+        private Seq<T> seq;
+
+        public SeqIterator(Seq<T> seq) {
+            this.seq = seq;
+        }
+
+        @Override // Iterator
+        public boolean hasNext() {
+            return !seq.empty();
+        }
+
+        @Override // Iterator
+        public T next() {
+            T value = seq.first();
+            seq = seq.rest();
+            return value;
+        }
     }
 
     /**
@@ -719,6 +745,34 @@ public abstract class Seqs {
      */
     public static <T> Function<Seq<T>, Seq<T>> reverse() {
         return Seqs::reverse;
+    }
+
+    /**
+     * "Adds" every value in a sequence to a collection, creating a new
+     * collection with the same type and values as the input collection, plus
+     * the values from the input sequence.
+     * @param col The input collection.
+     * @param seq The input sequence.
+     * @param <T> The type of values in the input collection.
+     * @return The output collection.
+     * @see PCol#conj
+     */
+    public static <T> PCol<T> into(PCol<T> col, Seq<? extends T> seq) {
+        return Seqs.foldLeft(PCol::conj, col, seq);
+    }
+
+    /**
+     * Returns a function that "adds" every value in a sequence to a
+     * collection, creating a new collection with the same type and values as
+     * the input collection, plus the values from the input sequence.
+     * @param col The input collection.
+     * @param <TOut> The type of values in the input collection.
+     * @param <TIn> The type of values in the input sequence.
+     * @return The function.
+     * @see PCol#conj
+     */
+    public static <TOut, TIn extends TOut> Function<Seq<TIn>, PCol<TOut>> into(PCol<TOut> col) {
+        return seq -> into(col, seq);
     }
 
     // foldRight-derived operations

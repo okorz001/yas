@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -278,6 +280,14 @@ public class SeqsTest {
     }
 
     @Test
+    public void intoTest() {
+        PCol<Integer> result = range(3)
+                .apply(into(list()));
+        assertThat(result, instanceOf(PList.class));
+        assertThat(result, is(list(2, 1, 0)));
+    }
+
+    @Test
     public void foldRightTest() {
         String result = list("a", "b", "c")
                 .apply(foldRight(String::concat,"_"));
@@ -501,5 +511,12 @@ public class SeqsTest {
         result = Seqs.<String>empty()
                 .apply(interleave(list("a", "b")));
         assertThat(result, is(list("a", "b")));
+    }
+
+    @Test
+    public void iteratorTest() {
+        List<Integer> values = new ArrayList<>();
+        iterator(list(1, 2, 3)).forEachRemaining(values::add);
+        assertThat(values, contains(1, 2, 3));
     }
 }
